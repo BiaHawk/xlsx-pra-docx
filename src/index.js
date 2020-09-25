@@ -15,6 +15,17 @@ console.log("Arquivo: %s", process.env.DOC_01) // é assim que acessamos as vari
 
 const exceljs = require("exceljs") // exceljs pq já usei antes...
 const docx = require("docx"); // vou usar pela primeira vez...
+const { Table, Paragraph, Spacing, OutlineLevel, Border } = require('docx');
+
+//usar futuramente para pegar a data atual para o doc
+atual = new Date
+var data = "0" + atual.getDate() + "/" + "0" + (atual.getMonth() + 1) + "/" + atual.getFullYear();
+
+
+//var estagiario = prompt("Please enter your name", "<name goes here>");
+//ideia para inserir no doc o nome do estagiario que está fazendo o doc
+//var turma = prompt("Please enter your class","<class goes here>" )
+//var procurador_responsavel = 
 
 
 async function principal() {
@@ -25,6 +36,13 @@ async function principal() {
     const linhasQueEuQuero = [];
     // nele vamos colocar só as linhas que tem dados importantes (a partir da linha 4)
     // o api usa callback... :/
+
+    //lista para armazenar o processo para checagem dos repetidos
+    var lista = []
+    const resumo = 6
+
+
+
     worksheet.eachRow(function (row, rowNumber) {
         // 
         if (rowNumber < 4) { return; } // isso poderia ser mais inteligente e flexivel...
@@ -50,11 +68,20 @@ async function principal() {
             poloAtivo,
             poloPassivo // cheguei aqui e me toquei que nem precisava ter criado tanta variável...
         }
-        console.log("Linha: %O", linha);
-        linhasQueEuQuero.push(linha) // joga no array...
+
+        //checagem de repetidos
+        //if processo not in lista then lista push processo and linhasqueeuquero push linha
+        if(!lista.includes(processo)){
+            lista.push(processo)
+            linhasQueEuQuero.push(linha)
+        }
+
+        console.log("Linha: %O", linha)
+
+
     });
     // aqui linhasQueEuQuero tem os dados que me interessam...
-    // eu poderia retornar aqui e separar essa função pro códifo ficar mais fácil de manter
+    // eu poderia retornar aqui e separar essa função pro código ficar mais fácil de manter
     // mas vou continuar daqui tentando fazer o DOCX
     // LENDO O '.DOC' EU PERCEBI QUE OS DADOS ESTÃO AGRUPADOS POR ORGÃO JULGADOR
     //  ENTAO VAMOS VER QUANTOS ORGAOS JULGADORES DIFERENTES TEMOS
@@ -66,14 +93,20 @@ async function principal() {
     console.log("temos %d orgãos julgadores diferentes. São eles: %O",
         orgaosJulgadores.length,
         orgaosJulgadores);
+    
+
 
     // iniciar o doc
     // CTRL C + CTRL V da documentação...
     const doc = new docx.Document();
 
+
+
     for (const orgaoJulgador of orgaosJulgadores) { // outro for..
         // estou agrupando por orgao Julgador...
         // filtrar os processos desse órgão que eu quero...
+
+
         const linhas = linhasQueEuQuero.filter(l => l.orgaoJulgador === orgaoJulgador);
         
         // PARECE FLUTTER ISSO :) kkkk        
@@ -88,9 +121,18 @@ async function principal() {
                         }),                   
                     ],
                 }),
+                new docx.Paragraph({
+                    children: [
+                        new docx.TextRun({
+                            text: data,
+                            bold: true,
+                        }),
+                    ],
+                }),
+
                 new docx.Table({
                     width: {
-                        size: 90,
+                        size: 100, //estava 90
                         type: docx.WidthType.PERCENTAGE, // tem até enums como no flutter!
                     },
                     rows: 
@@ -100,12 +142,27 @@ async function principal() {
                                     children: [new docx.Paragraph(l.processo)],
                                 }),
                                 new docx.TableCell({
-                                    children: [new docx.Paragraph(l.assunto)],
+                                    children: [new docx.Paragraph(l.orgaoJulgador)],
+                                }),
+                                new docx.TableCell({
+                                    children: [new docx.Paragraph(l.classeJudicial)]
+                                }),
+                                new docx.TableCell({
+                                    children: [new docx.Paragraph(l.assunto)]
+                                }),
+                                new docx.TableCell({
+                                    children: [new docx.Paragraph(l.tipoDeSessao)]
+                                }),
+                                new docx.TableCell({
+                                    children: [new docx.Paragraph(l.poloAtivo)]
+                                }),
+                                new docx.TableCell({
+                                    children: [new docx.Paragraph(l.poloPassivo,)]
                                 }),
                             ] // muito flutter isso aqui !!!
                         }))
                     
-                }) 
+                }),
             ],
         });
     }
